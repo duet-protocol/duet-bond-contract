@@ -1,0 +1,7 @@
+.env*
+artifacts/
+cache/
+node_modules/
+abis/*.hardhat.json
+abis/*.dev.json
+
