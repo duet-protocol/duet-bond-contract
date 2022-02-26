@@ -3,7 +3,6 @@ pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -11,7 +10,6 @@ import "./Epoch.sol";
 import "./CloneFactory.sol";
 
 contract SingleBond is Ownable, CloneFactory {
-    using SafeERC20 for IERC20;
     using Strings for uint256;
 
     address[] private epoches;
@@ -32,7 +30,7 @@ contract SingleBond is Ownable, CloneFactory {
     }
 
     function setEpochImp(address _epochImp) external onlyOwner {
-      epochImp = _epochImp;
+        epochImp = _epochImp;
     }
 
     function getEpoch(uint256 id) external view returns(address){
@@ -64,7 +62,7 @@ contract SingleBond is Ownable, CloneFactory {
             epoches.push(ep);
             emit NewEpoch(ep);
 
-            IERC20(rewardtoken).safeTransferFrom(msg.sender, ep, amount);
+            IERC20(rewardtoken).transferFrom(msg.sender, ep, amount);
         }
         end = start + phasenum * duration;
     }
@@ -96,7 +94,7 @@ contract SingleBond is Ownable, CloneFactory {
                 amount = _interestone + _principal;
             }
             Epoch(renewEP).mint(debtor, amount);
-            token.safeTransferFrom(msg.sender, renewEP, amount);
+            token.transferFrom(msg.sender, renewEP, amount);
         }
         uint256 idnum = epoches.length;
         for(uint256 j = 0; j < needcreate; j++){
@@ -111,7 +109,7 @@ contract SingleBond is Ownable, CloneFactory {
             Epoch(ep).initialize(rewardtoken, newstart + (j+1)*duration, debtor, amount, name, symbol);
             epoches.push(ep);
             emit NewEpoch(address(ep));
-            token.safeTransferFrom(msg.sender, ep, amount);
+            token.transferFrom(msg.sender, ep, amount);
         }
 
         end = newstart + needcreate * duration;
@@ -120,7 +118,7 @@ contract SingleBond is Ownable, CloneFactory {
 
     function renewSingleEpoch(uint256 id, uint256 amount, address to) external onlyOwner{
         require(epoches[id] != address(0), "unavailable epoch"); 
-        IERC20(rewardtoken).safeTransferFrom(msg.sender, epoches[id], amount);
+        IERC20(rewardtoken).transferFrom(msg.sender, epoches[id], amount);
         Epoch(epoches[id]).mint(to, amount);    
     }
 
@@ -147,12 +145,31 @@ contract SingleBond is Ownable, CloneFactory {
         for( uint256 i = 0; i < epochs.length; i++ ){
             Epoch ep = Epoch(epochs[i]);
             require( block.timestamp > ep.end(), "epoch not end");
-            uint256 b = ep.balanceOf(user);
-            require( b >= amounts[i], "over balance");
             ep.redeem(user, to, amounts[i]);
         }
     }
 
+    function redeemOrTransfer(address[] memory epochs, uint[] memory amounts, address to) external {
+        require(epochs.length == amounts.length, "mismatch length");
+        address user = msg.sender;
+        
+        for( uint256 i = 0; i < epochs.length; i++){
+            Epoch ep = Epoch(epochs[i]);
+            if( block.timestamp > ep.end()) {
+                ep.redeem(user, to, amounts[i]);
+            } else {
+                ep.multiTransfer(user, to, amounts[i]);
+            }
+        }
+    }
 
+    function multiTransfer(address[] memory epochs, uint[] memory amounts, address to) external {
+        require(epochs.length == amounts.length, "mismatch length");
+        address user = msg.sender;
+        for( uint256 i = 0; i < epochs.length; i++){
+            Epoch ep = Epoch(epochs[i]);
+            ep.multiTransfer(user, to, amounts[i]);
+        }
+    }
 
 }
