@@ -58,6 +58,7 @@ contract SingleBond is Ownable, CloneFactory {
             string memory symbol = string(abi.encodePacked(string(abi.encodePacked(duration.toString(),  "EP#")), i.toString()));
 
             address ep = createClone(epochImp);
+
             Epoch(ep).initialize(rewardtoken, epend, debtor, amount, name, symbol);
             epoches.push(ep);
             emit NewEpoch(ep);
