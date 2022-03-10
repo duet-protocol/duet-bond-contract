@@ -54,8 +54,8 @@ contract SingleBond is Ownable, CloneFactory {
             if(i == phasenum - 1) {
                 amount = _principal + _interestone;
             }
-            string memory name = string(abi.encodePacked(string(abi.encodePacked(duration.toString(),  "Epoch#")), i.toString()));
-            string memory symbol = string(abi.encodePacked(string(abi.encodePacked(duration.toString(),  "EP#")), i.toString()));
+            string memory name = string(abi.encodePacked(string("Epoch#"), i.toString()));
+            string memory symbol = string(abi.encodePacked(string("EP#"), i.toString()));
 
             address ep = createClone(epochImp);
 
@@ -103,8 +103,8 @@ contract SingleBond is Ownable, CloneFactory {
             if(needrenew + j == _phasenum - 1){
                 amount = _principal + _interestone;
             }
-            string memory name = string(abi.encodePacked(string(abi.encodePacked(duration.toString(),  "Epoch#")), (j+idnum).toString()));
-            string memory symbol = string(abi.encodePacked(string(abi.encodePacked(duration.toString(),  "EP#")), (j+idnum).toString()));
+            string memory name = string(abi.encodePacked(string("Epoch#"), (j+idnum).toString()));
+            string memory symbol = string(abi.encodePacked(string("EP#"), (j+idnum).toString()));
 
             address ep = createClone(epochImp);
             Epoch(ep).initialize(rewardtoken, newstart + (j+1)*duration, debtor, amount, name, symbol);
