@@ -39,6 +39,10 @@ contract Pool {
     _;
   }
 
+  function getEpoches() external view returns(address[] memory){
+    return epoches;
+  }
+
   function addEpoch(address epoch) internal {
     if(!validEpoches[epoch]) {
       validEpoches[epoch] = true;
