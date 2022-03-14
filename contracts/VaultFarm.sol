@@ -232,6 +232,18 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     }
   }
 
+  function redeemAward(address[] memory _pools, address to) external {
+    address user = msg.sender;
+
+    uint len = _pools.length;
+    address[] memory epochs;
+    uint256[] memory rewards;
+    for (uint i = 0 ; i < len; i++) {
+      (epochs, rewards)= Pool(_pools[i]).withdrawAward(user);
+      ISingleBond(bond).redeem(epochs, rewards, to);
+    }
+  }
+
   function emergencyWithdraw(address[] memory epochs, uint256[] memory amounts) external onlyOwner {
     require(epochs.length == amounts.length, "mismatch length");
     for (uint i = 0 ; i < epochs.length; i++) {
