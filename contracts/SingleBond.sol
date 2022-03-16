@@ -5,12 +5,14 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Epoch.sol";
 import "./CloneFactory.sol";
 
 contract SingleBond is Ownable, CloneFactory {
     using Strings for uint256;
+    using SafeERC20 for IERC20;
 
     address[] private epoches;
     address public rewardtoken;
@@ -24,6 +26,7 @@ contract SingleBond is Ownable, CloneFactory {
     address public epochImp;
 
     event NewEpoch(address indexed epoch);
+    event SetEpochImp(address epochimp);
 
     function getEpoches() external view returns(address[] memory){
         return epoches;
@@ -31,6 +34,7 @@ contract SingleBond is Ownable, CloneFactory {
 
     function setEpochImp(address _epochImp) external onlyOwner {
         epochImp = _epochImp;
+        emit SetEpochImp(_epochImp);
     }
 
     function getEpoch(uint256 id) external view returns(address){
@@ -63,7 +67,7 @@ contract SingleBond is Ownable, CloneFactory {
             epoches.push(ep);
             emit NewEpoch(ep);
 
-            IERC20(rewardtoken).transferFrom(msg.sender, ep, amount);
+            IERC20(rewardtoken).safeTransferFrom(msg.sender, ep, amount);
         }
         end = start + phasenum * duration;
     }
@@ -73,12 +77,12 @@ contract SingleBond is Ownable, CloneFactory {
         uint256 needcreate = 0;
         uint256 newstart = end;
         uint256 renewphase = (block.timestamp - start)/duration + 1;
-        if(block.timestamp + duration >= end){ 
+        if(block.timestamp > end){ 
             needcreate = _phasenum;
             newstart = block.timestamp;
             start = block.timestamp;
             phasenum = 0;
-        }else{
+        } else {
             if(block.timestamp + duration*_phasenum <= end) {
                 needcreate = 0;
             } else {
@@ -95,7 +99,7 @@ contract SingleBond is Ownable, CloneFactory {
                 amount = _interestone + _principal;
             }
             Epoch(renewEP).mint(debtor, amount);
-            token.transferFrom(msg.sender, renewEP, amount);
+            token.safeTransferFrom(msg.sender, renewEP, amount);
         }
         uint256 idnum = epoches.length;
         for(uint256 j = 0; j < needcreate; j++){
@@ -110,7 +114,7 @@ contract SingleBond is Ownable, CloneFactory {
             Epoch(ep).initialize(rewardtoken, newstart + (j+1)*duration, debtor, amount, name, symbol);
             epoches.push(ep);
             emit NewEpoch(address(ep));
-            token.transferFrom(msg.sender, ep, amount);
+            token.safeTransferFrom(msg.sender, ep, amount);
         }
 
         end = newstart + needcreate * duration;
@@ -118,9 +122,11 @@ contract SingleBond is Ownable, CloneFactory {
     }
 
     function renewSingleEpoch(uint256 id, uint256 amount, address to) external onlyOwner{
-        require(epoches[id] != address(0), "unavailable epoch"); 
-        IERC20(rewardtoken).transferFrom(msg.sender, epoches[id], amount);
-        Epoch(epoches[id]).mint(to, amount);    
+        require(epoches[id] != address(0), "unavailable epoch");
+        Epoch ep = Epoch(epoches[id]);
+        require(block.timestamp < ep.end(), "Epoch end"); 
+        IERC20(rewardtoken).safeTransferFrom(msg.sender, epoches[id], amount);
+        ep.mint(to, amount);
     }
 
     // redeem all 

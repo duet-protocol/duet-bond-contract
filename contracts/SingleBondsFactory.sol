@@ -27,7 +27,7 @@ contract SingleBondsFactory is Ownable {
         token.safeTransferFrom(msg.sender, address(this), totalAmount);
 
         SingleBond singlebond = new SingleBond(_rewardtoken);
-        token.approve(address(singlebond), totalAmount);
+        token.safeIncreaseAllowance(address(singlebond), totalAmount);
         singlebond.setEpochImp(epochImp);
         singlebond.initBond(_start, _duration, _phasenum, _principal, _interestone, _debtor);
         emit NewBonds(address(singlebond), _rewardtoken, _start, _duration, _phasenum, _principal, _interestone, _debtor);
@@ -39,7 +39,7 @@ contract SingleBondsFactory is Ownable {
         uint totalAmount = _phasenum * _interestone + _principal;
         require(token.balanceOf(msg.sender)>= totalAmount, "factory:no balance");
         token.safeTransferFrom(msg.sender, address(this), totalAmount);
-        token.approve(address(bondAddr), totalAmount);
+        token.safeIncreaseAllowance(address(bondAddr), totalAmount);
 
         bondAddr.renewal(_phasenum, _principal, _interestone);
     }
@@ -47,7 +47,7 @@ contract SingleBondsFactory is Ownable {
     function renewSingleEpoch(SingleBond bondAddr, uint256 id, uint256 amount, address to) external onlyOwner{ 
         IERC20 token = IERC20(bondAddr.rewardtoken());
         token.safeTransferFrom(msg.sender, address(this), amount);
-        token.approve(address(bondAddr), amount);
+        token.safeIncreaseAllowance(address(bondAddr), amount);
         bondAddr.renewSingleEpoch(id,amount,to);
     }
 

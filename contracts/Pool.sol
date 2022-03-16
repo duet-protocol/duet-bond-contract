@@ -5,7 +5,7 @@ import "./interfaces/IEpoch.sol";
 import "./interfaces/IVaultFarm.sol";
 
 contract Pool {
-  uint256 public constant SCALE = 1e12;
+  uint256 private constant SCALE = 1e12;
   address public farming;
 
   address[] public epoches;
@@ -178,7 +178,7 @@ contract Pool {
 
       EpochInfo memory epinfo =  epochInfos[epoches[i]];
       uint currPending = 0;
-      if (passed > 0) {
+      if (passed > 0 && totalAmount > 0) {
         currPending = epinfo.epochPerSecond * passed * deposits[user] / totalAmount;
       }
       rewards[i] = rewardAvailable[user][epoches[i]] 
@@ -194,10 +194,10 @@ contract Pool {
     updatePool();
     updateUser(user, deposits[user], false);
 
-    (epochs, rewards) = pending(user);
-
     for(uint256 i = 0; i< epoches.length; i++) {
+      rewards[i] = rewardAvailable[user][epoches[i]];
       rewardAvailable[user][epoches[i]] = 0;
     }
+    epochs = epoches;
   }
 }

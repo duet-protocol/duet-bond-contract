@@ -32,7 +32,11 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
   uint[] public epochRewards;
 
   event NewPool(address asset, address pool);
+  event SetPoolImp(address poolimp);
   event VaultApproved(address vault, bool approved);
+  event WithdrawAward(address user, address[] pools, bool redeem);
+  event RedeemAward(address user, address[] pools);
+  event EmergencyWithdraw(address[] epochs, uint256[] amounts);
 
   constructor() {
   }
@@ -45,6 +49,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
 
   function setPoolImp(address _poolImp) external onlyOwner {
     poolImp = _poolImp;
+    emit SetPoolImp(_poolImp);
   }
 
   function approveVault(address vault, bool approved)  external onlyOwner {
@@ -108,7 +113,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     }
   }
 
-  function massUpdatePools(address[] memory epochs, uint256[] memory rewards) public {
+  function massUpdatePools(address[] memory epochs, uint256[] memory rewards) internal {
     uint256 poolLen = pools.length;
     uint256 epochLen = epochs.length;
     
@@ -128,6 +133,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
   // epochs need small for gas issue.
   function newReward(address[] memory epochs, uint256[] memory rewards, uint duration) public onlyOwner {
     require(block.timestamp >= periodFinish, 'period not finish');
+    require(epochs.length == rewards.length, "mismatch length");
     require(duration > 0, 'duration zero');
 
     periodFinish = block.timestamp + duration;
@@ -230,7 +236,11 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
         ISingleBond(bond).multiTransfer(epochs, rewards, to);
       }
     }
+
+    emit WithdrawAward(user, _pools, redeem);
   }
+
+  
 
   function redeemAward(address[] memory _pools, address to) external {
     address user = msg.sender;
@@ -242,12 +252,15 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
       (epochs, rewards)= Pool(_pools[i]).withdrawAward(user);
       ISingleBond(bond).redeem(epochs, rewards, to);
     }
+    emit RedeemAward(user, _pools);
   }
 
   function emergencyWithdraw(address[] memory epochs, uint256[] memory amounts) external onlyOwner {
     require(epochs.length == amounts.length, "mismatch length");
+    
     for (uint i = 0 ; i < epochs.length; i++) {
       IERC20(epochs[i]).transfer(msg.sender, amounts[i]);
     }
+    emit EmergencyWithdraw(epochs, amounts);
   }
 }
