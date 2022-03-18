@@ -194,7 +194,9 @@ contract Pool {
     updatePool();
     updateUser(user, deposits[user], false);
 
-    for(uint256 i = 0; i< epoches.length; i++) {
+    uint len = epoches.length;
+    rewards = new uint[](len);
+    for(uint256 i = 0; i< len; i++) {
       rewards[i] = rewardAvailable[user][epoches[i]];
       rewardAvailable[user][epoches[i]] = 0;
     }

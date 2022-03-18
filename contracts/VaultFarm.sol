@@ -178,6 +178,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
   }
 
   function removePoolEpoch(address pool, address epoch) external onlyOwner {
+    require( block.timestamp > IEpoch(epoch).end() + 180 days, "Can't remove live epoch");
     Pool(pool).remove(epoch);
   }
 
