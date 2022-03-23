@@ -74,7 +74,6 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
   function doSyncVault(IVault vault, Pool pool, address user) internal returns (bool equaled){
     uint amount = vault.deposits(user);
     uint currAmount = pool.deposits(user);
-    require(amount != currAmount, "aleady migrated");
 
     if (amount > currAmount) {
       pool.deposit(user, amount - currAmount);
