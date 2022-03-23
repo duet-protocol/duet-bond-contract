@@ -71,21 +71,40 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     rewards = epochRewards;
   }
 
+  function doSyncVault(IVault vault, Pool pool, address user) internal returns (bool equaled){
+    uint amount = vault.deposits(user);
+    uint currAmount = pool.deposits(user);
+    require(amount != currAmount, "aleady migrated");
+
+    if (amount > currAmount) {
+      pool.deposit(user, amount - currAmount);
+    } else if(amount < currAmount) {
+      pool.withdraw(user, currAmount - amount);
+    } else {
+      equaled = true;
+    }
+  }
+
   function syncVault(address vault) external {
     require(vaults[vault], "invalid vault");
     address asset = IVault(vault).underlying();
-    uint amount = IVault(vault).deposits(msg.sender);
+
+    address pooladdr = assetPool[asset];
+    require(pooladdr != address(0), "no asset pool");
+    bool equaled = doSyncVault(IVault(vault), Pool(pooladdr), msg.sender);
+    require(!equaled, "aleady migrated");
+  }
+
+  // sync Vault by batch of users 
+  function syncVaultbyBatch(address vault, address[] memory users) external {
+    require(vaults[vault], "invalid vault");
+    address asset = IVault(vault).underlying();
 
     address pooladdr = assetPool[asset];
     require(pooladdr != address(0), "no asset pool");
     
-    uint currAmount = Pool(pooladdr).deposits(msg.sender);
-    require(amount != currAmount, "aleady migrated");
-
-    if (amount > currAmount) {
-      Pool(pooladdr).deposit(msg.sender, amount - currAmount);
-    } else {
-      Pool(pooladdr).withdraw(msg.sender, currAmount - amount);
+    for (uint256 i = 0; i < users.length; i++) {
+      doSyncVault(IVault(vault), Pool(pooladdr), users[i]);
     }
   }
 

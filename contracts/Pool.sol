@@ -150,6 +150,10 @@ contract Pool {
   function withdraw(address user, uint256 amount) external onlyFarming {
     updatePool();
     
+    if (deposits[user] < amount) {
+      amount = deposits[user];
+    }
+
     uint newDeposit = deposits[user] - amount;
     updateUser(user, newDeposit, false);
 
