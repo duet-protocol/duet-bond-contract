@@ -248,6 +248,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     address[] memory epochs;
     uint256[] memory rewards;
     for (uint i = 0 ; i < len; i++) {
+      require(isValidPool(_pools[i]), "Invalid pool");
       (epochs, rewards)= Pool(_pools[i]).withdrawAward(user);
       if (redeem) {
         ISingleBond(bond).redeemOrTransfer(epochs, rewards, to);
@@ -268,6 +269,7 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     address[] memory epochs;
     uint256[] memory rewards;
     for (uint i = 0 ; i < len; i++) {
+      require(isValidPool(_pools[i]), "Invalid pool");
       (epochs, rewards)= Pool(_pools[i]).withdrawAward(user);
       ISingleBond(bond).redeem(epochs, rewards, to);
     }
@@ -282,4 +284,14 @@ contract VaultFarm is IVaultFarm, CloneFactory, OwnableUpgradeable {
     }
     emit EmergencyWithdraw(epochs, amounts);
   }
+
+  function isValidPool(address p) internal view returns (bool valid) {
+    uint len = pools.length;
+    for (uint i = 0 ; i < len; i++) {
+      if (p == pools[i]) {
+        valid = true;
+      }
+    }
+  }
+
 }
